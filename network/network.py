@@ -13,5 +13,15 @@ server无延时的收到node发给他的信息
 server转发给所有的nodes的时候加入延时
 '''
 
+from multiprocessing import Process
+
+from character.validator.validator import Validator
+
+
+def network():
+    p = Process(target=Validator.run())
+    p.start()
+
+
 
 

@@ -13,10 +13,12 @@ class BlockInformation:
 
 class Block:
     # Constructor
-    def __init__(self,transactions, previousHash):
+    def __init__(self,transactions,previousHash):
         self.block_information = BlockInformation(transactions, previousHash)
         self.hash = ''
+        self.height = 0
         self.timestamp = ''
+
 
     def __init__(self, block_information):
         self.block_information = block_information
@@ -25,10 +27,24 @@ class Block:
 
     # Compute hash (sha256)
     def computeHash(self):
-        return str(hashlib.sha256((toString(self.block_information)).encode('utf-8')).hexdigest())
+        self.hash = hashlib.sha256((toString(self.block_information)).encode('utf-8')).hexdigest()
+        return str(self.hash)
+
+    def set_height(self,height):
+        self.height = height
+    #Set up the timestamp for block accepted
+    def setTimestamp(self,time):
+        self.timestamp = time
 
     # Check block before submit it
     def validate(self):
         assert self.hash == self.computeHash(), "The information of this block is changed"
         for transaction in self.block_information.transactions:
             transaction.validate() # 验证每一个transaction签名
+        return True
+    '''
+    new add:
+    '''
+    def getDataForHash(self):
+        return toString(self.block_information)
+

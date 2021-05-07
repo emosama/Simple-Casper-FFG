@@ -22,4 +22,4 @@ class Transaction:
         self.signature = sign(privkey, toString(self.transaction_information))
 
     def validate(self):
-        assert validateSignature(self.sender, self.signature, toString(self.transaction_information)), "Invalidate signature"
+        return validateSignature(self.sender, self.signature, toString(self.transaction_information))
