@@ -3,9 +3,6 @@ TODO: 未完成（难）
 包含supermajority link的信息
 '''
 
-from message.vote import Vote,VoteInformation
-from configuration.generalParameters import attributes
-
 class supermajorityLink:
     # 传入vote message
     def __init__(self,vote):
@@ -19,13 +16,13 @@ class supermajorityLink:
     Input: No arguments
     '''
     def updateLinkNodeAttributes(self):
-        if self.source == attributes.JUSTIFIED or self.source == attributes.FINALIZED:
+        if self.source == "JUSTIFIED" or self.source == "FINALIZED":
             # 父节点为justified，则子节点为justified
-            self.target.updateAttributes(attributes.JUSTIFIED)
+            self.target.updateAttributes("JUSTIFIED")
             self.target.setSupermajorityLinkSourceHash(self.source)
             # 子节点为justified，则若为父节点的direct child则可以finalized
             if self.target_epoch == self.source_epoch + 1:
-                self.source.setAttributes(attributes.FINALIZED)
+                self.source.setAttributes("FINALIZED")
 
 
 

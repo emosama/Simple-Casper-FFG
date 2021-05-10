@@ -2,8 +2,6 @@
 TODO: 未完成（中）
 checkpoint
 '''
-from enum import Enum
-from configuration.generalParameters import attributes
 import hashlib
 from serialization.serialization import toString
 
@@ -35,7 +33,7 @@ class CheckPoint:
         self.pre_blocks = set()
         self.epoch = 0
 
-        self.attribute = attributes.FINALIZED
+        self.attribute = "FINALIZED"
         self.supermajoritylink_Source = ''
 
 
@@ -56,7 +54,7 @@ class CheckPoint:
         self.epoch = pre_checkpoint.epoch + 1
 
 
-        self.attribute = attributes.UNPROCESSED
+        self.attribute = "UNPROCESSED"
         self.supermajoritylink_Source_hash = ''
 
     #根据checkpoint的信息计算hash

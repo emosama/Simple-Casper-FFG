@@ -13,7 +13,7 @@ class BlockInformation:
 
 class Block:
     # Constructor
-    def __init__(self,transactions,previousHash):
+    def __init__(self, transactions, previousHash):
         self.block_information = BlockInformation(transactions, previousHash)
         self.hash = ''
         self.height = 0
@@ -23,6 +23,7 @@ class Block:
     def __init__(self, block_information):
         self.block_information = block_information
         self.hash = ''
+        self.height = 0
         self.timestamp = ''
 
     # Compute hash (sha256)

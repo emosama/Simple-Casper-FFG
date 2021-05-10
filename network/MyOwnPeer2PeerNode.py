@@ -5,12 +5,11 @@
 # MyOwnPeer2PeerNode is an example how to use the p2pnet. Node to implement your own peer-to-peer network node.        #
 #######################################################################################################################
 from network.node import Node
-import json
 class MyOwnPeer2PeerNode (Node):
 
     # Python class constructor
-    def __init__(self, host, port):
-        super(MyOwnPeer2PeerNode, self).__init__(host, port, None)
+    def __init__(self, miner, host, port):
+        super(MyOwnPeer2PeerNode, self).__init__(miner, host, port, None)
         print("MyPeer2PeerNode: Started")
 
     # all the methods below are called when things happen in the network.
@@ -29,9 +28,9 @@ class MyOwnPeer2PeerNode (Node):
         print("outbound_node_disconnected: " + node.id)
 
     def node_message(self, node, data):
-        print("node_message from " + node.id + ": " + str(data))
-        self.receive_data = data
-        print(self.receive_data)
+        #print("node_message from " + node.id + ": " + str(data))
+        self.receive_block.append(data)
+        #print(self.receive_data)
         #TODO:将new block加到现有的chain上
 
         

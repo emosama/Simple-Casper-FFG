@@ -12,20 +12,20 @@ description: stay on the chain with the highest justified checkpoint.
 parameters: block: obj, validator: obj
 return: head: block
 '''
-# def forkChooseRule(miner, block):
-#     if miner.checkpoint_set[block.hash].hash == miner.highest_justified_checkpoint.hash:
-#         return block
-#     else:
-#         max_height = miner.highest_justified_checkpoint.height
-#         max_descendants_hash = miner.highest_justified_checkpoint.hash
-#         descendants = list(miner.checkpoint_set.keys()).copy()
-#         for des_hash in descendants:
-#             if miner.highest_justified_checkpoint.hash == des_hash:
-#                 height = miner.block_set[des_hash].height
-#                 if height > max_height:
-#                     max_height = height
-#                     max_descendants_hash = des_hash
-#         return miner.block_set[max_descendants_hash]
+def forkChooseRule(miner, block):
+    if miner.checkpoint_set[block.hash].hash == miner.highest_justified_checkpoint.hash:
+        return block
+    else:
+        max_height = miner.highest_justified_checkpoint.height
+        max_descendants_hash = miner.highest_justified_checkpoint.hash
+        descendants = list(miner.checkpoint_set.keys()).copy()
+        for des_hash in descendants:
+            if miner.highest_justified_checkpoint.hash == des_hash:
+                height = miner.block_set[des_hash].height
+                if height > max_height:
+                    max_height = height
+                    max_descendants_hash = des_hash
+        return miner.block_set[max_descendants_hash]
 
 '''
 TODO:
@@ -38,12 +38,12 @@ description: invalidator detection. (slashing condition)
 parameters: validator: obj, new_votes: set
 return: Boolean
 '''
-def invalidatorDetect(validator, new_votes):
+def invalidatorDetect(vote_history, new_votes):
 
-    for prev_vote in validator.votes[new_votes.validators]:
-        if prev_vote.target_height == new_votes.target_height:
+    for prev_vote in vote_history:
+        if prev_vote["target_epoch"] == new_votes["target_epoch"]:
             return False
-        if ((prev_vote.source_height < new_votes.source_height and prev_vote.target_height > new_votes.target_height) or
-            (prev_vote.source_height > new_votes.source_height and prev_vote.target_height < new_votes.target_height)):
+        if ((prev_vote["source_epoch"] < new_votes["source_epoch"] and prev_vote["target_epoch"] > new_votes["target_epoch"]) or
+            (prev_vote["source_epoch"] > new_votes["source_epoch"] and prev_vote["target_epoch"] < new_votes["target_epoch"])):
             return False
     return True

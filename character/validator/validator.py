@@ -2,95 +2,77 @@
 TODO：未完成
 依赖：
 '''
-from character.validator.counter import Counter
-from configuration.generalParameters import attributes
-from message.vote import Vote
-from logs.logs import record_invalidate_block, record_invalidate_vote, logs
-import time
-from  configuration.generalParameters import EPOCH_TIME
-from tree.checkpoint import CheckPoint
-from tree.block.block import Block
+from message.message import createCheckpoint,createVote
+from key.signature import sign, validateSignature
+import json
 
-class Validator:
+class Validator():
     """用于构建validator节点
 
-
     """
-    def __init__(self, validator_id, privkey):
+    def __init__(self, miner):
         """
         """
-        ##### Checkpoint part
-        self.validator_id = validator_id  # 其实就是公钥
-        self.privkey = privkey  # 私钥
-        self.highest_justified_checkpoint = self.root_checkpoint.hash  # 记录最高的checkpoint的hash
-
-        # 创世block
-        root_block = Block()
-        # 初始化block set，记录所有的block
-        self.block_set = {root_block.hash:root_block}  # 记录所有的block
-
-        # 创世block即为创世checkpoint
-        # TODO：root checkpoint需要dynasty吗
-        root_checkpoint = CheckPoint(root_block.hash, None, 0)
-        root_checkpoint.attribute = attributes.JUSTIFIED
-        # 初始化checkpoint set，记录所有的checkpoint
-        self.checkpoint_set = {root_checkpoint.hash:root_checkpoint }
-
-        # 初始化counter，投票计数以及记录器
-        self.counter = Counter()
-
+        self.miner = miner
         # TODO：用于保存所有的早产block和vote，然后延后处理他们？
-        self.dependencies = {}
+        self.vote_dependencies = {}
 
-
-    def acceptBlock(self, block):
-        # TODO: 如果block的父block都还没有接收到呢？
-        # 验证block的合法性以及查重
-        if block.validate() and block.hash not in self.block_set:
-            # 记录该block
-            self.block_set[block.hash] = block
-        else:
-            record_invalidate_block(("validator.acceptBlock", time.time(), block))
-            return
-
-        # 如果block达到了epoch点，则提交vote，并记录checkpoint
-        if block.height % EPOCH_TIME == 0:
-            # TODO: 自动生成朝代，待完成
-            dynasty = []
-            # 创建checkpoint
-            epcoh = block.height/EPOCH_TIME
-            checkpoint = CheckPoint(block.hash, dynasty, epcoh)
-            # 记录该checkpoint
-            self.checkpoint_set[block.hash] = checkpoint
-            # 发起投票
-            self.generateVote(checkpoint, self.privkey)
 
     def acceptVote(self, vote):
-        # TODO: 如果source或者target没在自己的记录里面呢？
-        if self.counter.countVote(vote):  # 返回为true时，表明该vote达到了2/3条件，此时进行prepare和commit
-            source = self.checkpoint_set[vote.source]
-            target = self.checkpoint_set[vote.target]
-            # prepare process
-            if target.attribute == attributes.JUSTIFIED:
-                source.attribute = attributes.JUSTIFIED
-                # 更新highest justified checkpoint
-                self.highest_justified_checkpoint = source.hash
-            # commit process
-            if source.attribute == attributes.JUSTIFIED and source.epoch - target.epoch == 1:
-                target.attribute = attributes.FINALIZED
-
-    def generateVote(self, target, privkey):
-        vote = Vote(self.highest_justified_checkpoint.hash, target.hash, self.highest_justified_checkpoint.epoch, self.target.epoch, self.validator_id)
-        vote.sign(privkey)
-        if vote.validate():
-            # TODO: 发送给network去广播自己的vote
+        # 如果source或者target没在自己的记录里面呢？
+        if vote["vote_information"]["source_hash"] not in self.miner.checkpoint_set:
+            if vote["vote_information"]["source_hash"] not in self.vote_dependencies:
+                self.vote_dependencies[vote["vote_information"]["source_hash"]] = []
+            self.vote_dependencies[vote["vote_information"]["source_hash"]].append(vote)
             return
-        else:
-            # TODO: 报告错误
-            record_invalidate_vote(("validator.generateVote", time.time(), vote))
+        if vote["vote_information"]["target_hash"] not in self.miner.checkpoint_set:
+            if vote["vote_information"]["target_hash"] not in self.vote_dependencies:
+                self.vote_dependencies[vote["vote_information"]["target_hash"]] = []
+            self.vote_dependencies[vote["vote_information"]["target_hash"]].append(vote)
+            return
 
-    def addDependency(self):
-        return
+        # 返回为true时，表明该vote达到了2/3条件，此时进行prepare和commit
+        if self.miner.counter.countVote(vote):
+            source = self.miner.checkpoint_set[vote["vote_information"]["source_hash"]]
+            target = self.miner.checkpoint_set[vote["vote_information"]["target_hash"]]
+            # prepare process
+            # if source["attribute"] is attributes.JUSTIFIED or source["attribute"] is attributes.FINALIZED:
+            if source["attribute"] is "JUSTIFIED":
+                target["attribute"] = "JUSTIFIED"
+                self.miner.justified_checkpoints.append(target["hash"])
+
+                # 更新main_chain, record blocks from the last justified checkpoint to the nearest justified checkpoint before it.
+                chain = []
+                chain.append(target["hash"])
+                pre_block = self.miner.block_set[self.miner.block_set[target["hash"]]["block_information"]["previous_hash"]]
+                while pre_block["hash"] != self.miner.highest_justified_checkpoint["hash"]:
+                    chain.append(pre_block["hash"])
+                    pre_block = self.miner.block_set[pre_block["block_information"]["previous_hash"]]
+                chain.reverse()
+                self.miner.main_chain += chain
+
+                # 更新highest justified checkpoint
+                self.miner.highest_justified_checkpoint = target
+                # 同步
+                # self.miner.sync()
+
+            # commit process
+            # if (target["attribute"] == attributes.JUSTIFIED and source["attribute"] == attributes.JUSTIFIED and target["epoch"] - source["epoch"] == 1) or source["hash"] == self.miner.root_checkpoint["hash"]:
+            if source["attribute"] == "JUSTIFIED" and ((target["attribute"] == "JUSTIFIED" and target["epoch"] - source["epoch"] == 1) or source["hash"] == self.miner.root_checkpoint["hash"]):
+                source["attribute"] = "FINALIZED"
+                self.miner.justified_checkpoints.remove(target["hash"])
+                self.miner.finalized_checkpoints.append(source["hash"])
+                # Commit后表明有新的finalize出现，这个时候朝代要更替
+                self.miner.counter.dynasty.dynastyChange()
+
+    def generateVote(self, target):
+        vote = createVote(self.miner.highest_justified_checkpoint["hash"], target["hash"], self.miner.highest_justified_checkpoint["epoch"], target["epoch"], self.miner.user.username)
+        sign(self.miner.user.privkey, json.dumps(vote["vote_information"]))
+
+        self.acceptVote(vote)
+        # broadcast vote to other nodes
+        self.miner.node.send_to_nodes({"vote": json.dumps(vote)})
+
 
     # def getPreviousCheckpoint(self, checkpoint):
     #     # 获取当前checkpoint对应的block

@@ -1,13 +1,15 @@
 '''
 已完成
 '''
-import hashlib
+from hash.hash import computeHash
+import json
 
 class proofOfWork:
-    def __init__(self, difficulty = 1):
+    def __init__(self, difficulty=1):
         self.difficulty = difficulty
+        self._continue = -1
 
-    def changeDifficulty(self,difficulty):
+    def changeDifficulty(self, difficulty):
         self.difficulty = difficulty
 
     def getAnswer(self):
@@ -17,20 +19,21 @@ class proofOfWork:
             answer += '0'
         return answer
 
-    def computeHash(self,data,noce):
-        return str(hashlib.sha256((data + str(noce)).encode('utf-8')).hexdigest())
+    def startMatch(self):
+        self._continue = 0
 
+    def stopMatch(self):
+        self._continue += 1
 
     # Comput hash according to the difficulty
-    def mine(self,data):
-        noce = 1
-        while(True):
-            hash = self.computeHash(data, noce)
+    def mine(self, block_information):
+        proof = 1
+        while self._continue == 0:
+            hash = computeHash((json.dumps(block_information) + str(proof)))
             if hash[:self.difficulty] == self.getAnswer():
-                print("Mine end: " + hash)
-
-                # TODO: broadcast block
-
-                return hash,noce
+                return hash, proof
             else:
-                noce += 1
+                proof += 1
+        if self._continue > 0:
+            self._continue -= 1
+        return None, None
