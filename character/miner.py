@@ -282,6 +282,10 @@ class Miner(threading.Thread):
             desc_anc_hash = self.block_set[desc_anc["block_information"]["previous_hash"]]["hash"]
         return False
 
+    def joinDynasty(self):
+        # request for join
+        self.node.send_to_nodes({"join_request": self.user.username})
+
 
 '''
 Miner维护一个block tree： block_set = {block.hash:block}

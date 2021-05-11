@@ -206,49 +206,38 @@ class NodeConnection(threading.Thread):
                             block_hash = data["ask_block"]
                             if block_hash in self.character.block_set:
                                 self.main_node.send_to_node(self, {"new_block": json.dumps(self.character.block_set[block_hash])})
-                        #
-                        # elif 'sync_request' in data.keys():
-                        #     print("sync")
-                        #     highest_justified_checkpoint = data["sync_request"]
-                        #     self.main_node.send_to_node(self, {"sync_response": json.dumps(self.character.block_set[block_hash])})
 
+                        elif 'join_request' in data.keys():
+                            applicant = data["join_request"]
+                            # dynasty_epoch = data["dynasty_epoch"]
+                            # if dynasty_epoch == self.character.counter.dynasty.current_epoch:
+                            if self.character.user.username in self.character.counter.dynasty.dynasties[self.character.counter.dynasty.current_epoch][1]:
+                                if self.character.counter.dynasty.joinDynasty(applicant):
+                                    self.main_node.send_to_nodes({
+                                                                    "join_response": True,
+                                                                    "dynasties": json.dumps(self.character.counter.dynasty.dynasties),
+                                                                    "current_epoch": self.character.counter.dynasty.current_epoch,
+                                                                    "join_community": json.dumps(self.character.counter.join_community),
+                                                                    "deposit_bank": json.dumps(self.character.counter.deposit_bank),
+                                                                    "withdraw_delay": self.character.counter.withdraw_delay,
+                                                                    "penalty": json.dumps(self.character.counter.penalty)
+                                                                })
 
-                        # elif data not in self.main_node.receive_votes and 'give_block' in data.keys():
-                        #     print("receive_block")
+                        elif 'join_response' in data.keys():
+                            dynasties = data["dynasties"]
+                            join_community = data["join_community"]
+                            deposit_bank = data["deposit_bank"]
+                            withdraw_delay = data["withdraw_delay"]
+                            penalty = data["penalty"]
+                            # dynasty_epoch = data["dynasty_epoch"]
+                            self.character.counter.dynasty.dynasties = dynasties
+                            self.character.counter.dynasty.join_community = join_community
+                            self.character.counter.dynasty.deposit_bank = deposit_bank
+                            self.character.counter.dynasty.withdraw_delay = withdraw_delay
 
-                        # elif data not in self.main_node.receive_votes and data not in self.main_node.receive_blocks:
-                        #     if "AAAA" not in self.miner.counter.penalty:
-                        #         self.miner.counter.penalty["AAAA"] = []
-                        #     self.miner.counter.penalty["AAAA"].append(data)
-                        # elif data not in self.main_node.receive_sync and 'sync' in data.keys():
-                        #     print("receive sync message")
-                        #     self.main_node.receive_sync.append(data)
-                        #     highest_justified_checkpoint = json.loads(data["sync"])
-                        #     if highest_justified_checkpoint["epoch"] < self.character.highest_justified_checkpoint["epoch"]:
-                        #         print("do sync")
-                        #         if highest_justified_checkpoint["hash"] in self.character.checkpoint_set:
-                        #             if self.character.checkpoint_set[highest_justified_checkpoint["hash"]]["attribute"] != "NORMAL":
-                        #                 # 将后续主链发送过去
-                        #                 index = self.character.main_chain.index(highest_justified_checkpoint["hash"])
-                        #                 for i in range(index, len(self.character.main_chain)):
-                        #                     if self.character.main_chain[i] in self.character.checkpoint_set:
-                        #                         self.main_node.send_to_node(self, {"checkpoint": self.character.checkpoint_set[self.character.main_chain[i]]})
-                        #                     self.main_node.send_to_node(self, {"new_block": self.character.block_set[self.character.main_chain[i]]})
-                        #     elif highest_justified_checkpoint["epoch"] > self.character.highest_justified_checkpoint["epoch"]:
-                        #         print("reverse sync")
-                        #         self.main_node.send_to_node(self, {"sync": self.character.highest_justified_checkpoint, "validator": self.character.user.username})
-                        #
-                        # elif data not in self.main_node.receive_checkpoint and 'checkpoint' in data.keys():
-                        #     self.main_node.receive_checkpoint.append(data)
-                        #     checkpoint = json.loads(data["checkpoint"])
-                        #     if checkpoint["hash"] not in self.miner.checkpoint_set:
-                        #         self.character.checkpoint_set[checkpoint["hash"]] = checkpoint
-                        #     else:
-                        #         self.character.checkpoint_set[checkpoint["hash"]]["attribute"] = checkpoint["attribute"]
-                        #
-                        #     if self.character.checkpoint_set[checkpoint["hash"]]["attribute"] == "JUSTIFIED":
-                        #         self.character.highest_justified_checkpoint = self.character.checkpoint_set[checkpoint["hash"]]
-                        #
+                            self.character.counter.penalty = penalty
+                            return
+
                         eot_pos = buffer.find(self.EOT_CHAR)
 
             time.sleep(0.01)

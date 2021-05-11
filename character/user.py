@@ -8,7 +8,7 @@ from message.message import createTransaction
 import json
 
 class User:
-    def __init__(self, pubkey, privkey, deposit = 0):
+    def __init__(self, pubkey, privkey, deposit=0):
         self.username = pubkey
         self.privkey = privkey
         self.deposit = deposit

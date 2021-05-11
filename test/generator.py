@@ -252,9 +252,11 @@ def add():
     user = User(publickey, private_key)
     INIT_DYNASTY.append(user.username)
     miner = Miner(user, ip_address, port_start + len(miners))
-    miner.start()
     miners.append(miner)
+    miner.start()
     complete_connect(miners)
+    miner.joinDynasty()
+    miner.startMine()
 
     response = {
         'result': publickey
@@ -280,6 +282,16 @@ def check_main_chain():
                 if _miner.block_set[_miner.main_chain[i]]["block_information"]["previous_hash"] != _miner.main_chain[
                     i - 1]:
                     sets[_miner.user.username] = False
+    response = {
+        "same": same,
+        'miners': sets,
+        "main_chain": miners[0].main_chain
+    }
+    return jsonify(response), 200
+
+@app.route('/bad_vote', methods=['GET'])
+def bad_vote():
+    self.validator.generateVote(checkpoint)
     response = {
         "same": same,
         'miners': sets,
