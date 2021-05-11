@@ -96,11 +96,12 @@ class Miner(threading.Thread):
         # # 如果block达到了epoch点，则提交vote，并记录checkpoint
         if block["hash"] not in self.block_set:
             # 如果block的父block都还没有接收到
-            if block["block_information"]["previous_hash"] not in self.block_set:
+            if block["block_information"]["previous_hash"] not in self.block_set and block["block_information"]["previous_hash"] is not None:
                 if block["block_information"]["previous_hash"] not in self.block_dependencies:
                     self.block_dependencies[block["block_information"]["previous_hash"]] = []
-                self.block_dependencies[block["block_information"]["previous_hash"]].append(block)
-                return
+                if block not in self.block_dependencies[block["block_information"]["previous_hash"]]:
+                    self.block_dependencies[block["block_information"]["previous_hash"]].append(block)
+                return block["block_information"]["previous_hash"]
 
             # 存储block
             self.block_set[block["hash"]] = block
@@ -125,17 +126,18 @@ class Miner(threading.Thread):
 
             self.forkChooseRule(block)
 
-            # 处理block_dependencies
-            if block["hash"] in self.block_dependencies:
-                d_blocks = self.block_dependencies.pop(block["hash"])
-                for d_block in d_blocks:
-                    self.acceptBlock(d_block)
-
             # 处理voter_dependencies
             if block["hash"] in self.validator.vote_dependencies:
                 d_votes = self.validator.vote_dependencies.pop(block["hash"])
                 for d_vote in d_votes:
                     self.validator.acceptVote(d_vote)
+
+            # 处理block_dependencies
+            if block["hash"] in self.block_dependencies:
+                d_blocks = self.block_dependencies.pop(block["hash"])
+                for d_block in d_blocks:
+                    self.acceptBlock(d_block)
+        return None
 
     def findNearestCheckpoint(self, block):
         previous_block_hash = block["block_information"]["previous_hash"]
@@ -200,10 +202,10 @@ class Miner(threading.Thread):
 
             if new_block["hash"] not in self.block_set:
                 self.allocatedTransactions = []
-                # boardcast to all miner and validator,there is a new block
-                self.node.send_to_nodes({"new_block": json.dumps(new_block)})
                 # 自身接收新的block
                 self.acceptBlock(new_block)
+                # broadcast to all miner and validator,there is a new block
+                self.node.send_to_nodes({"new_block": json.dumps(new_block)})
             # # 挖出新的块，添加区块到区块链
             # if new_block["hash"] not in self.block_set:
             #     # 添加区块到区块链

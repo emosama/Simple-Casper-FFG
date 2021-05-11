@@ -117,6 +117,15 @@ def get_checkpoints():
     }
     return jsonify(response), 200
 
+@app.route('/blocktree', methods=['GET'])
+def get_blocktree():
+    sets = {}
+    for each in miners:
+        sets[each.user.username] = each.block_set
+    response = {
+        'miners': sets
+    }
+    return jsonify(response), 200
 
 @app.route('/counts', methods=['GET'])
 def get_counts():
@@ -237,6 +246,20 @@ def get_blockTreeLen():
     }
     return jsonify(response), 200
 
+@app.route('/add', methods=['GET'])
+def add():
+    publickey, private_key = generate_ECDSA_keys()
+    user = User(publickey, private_key)
+    INIT_DYNASTY.append(user.username)
+    miner = Miner(user, ip_address, port_start + len(miners))
+    miner.start()
+    miners.append(miner)
+    complete_connect(miners)
+
+    response = {
+        'result': publickey
+    }
+    return jsonify(response), 200
 
 @app.route('/check_main_chain', methods=['GET'])
 def check_main_chain():
@@ -263,16 +286,5 @@ def check_main_chain():
         "main_chain": miners[0].main_chain
     }
     return jsonify(response), 200
-
-
-# @app.route('/voteLen', methods=['GET'])
-# def get_voteLen():
-#     sets = {}
-#     for each in miners:
-#         sets[each.user.username] = len(each.n.keys())
-#     response = {
-#         'miners': sets
-#     }
-#     return jsonify(response), 200
 
 app.run(host='0.0.0.0', port=5000)

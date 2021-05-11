@@ -114,12 +114,13 @@ class NodeConnection(threading.Thread):
     Required to implement the Thread. This is the main loop of the node client.
     In this method, the thread waits to receive data from another node.
     '''
+
     def run(self):
         """The main loop of the thread to handle the connection with the node. Within the
            main loop the thread waits to receive data from the node. If data is received 
            the method node_message will be invoked of the main node to be processed."""
         self.sock.settimeout(10.0)
-        buffer = b'' # Hold the stream that comes in!
+        buffer = b''  # Hold the stream that comes in!
 
         while not self.terminate_flag.is_set():
             chunk = b''
@@ -144,7 +145,6 @@ class NodeConnection(threading.Thread):
                     buffer = buffer[eot_pos + 1:]
                     data = self.decode_packet(packet)
 
-
                     # if data != "" and type(data).__name__ != "dict":
                     #     try:
                     #         data = json.loads(data)
@@ -159,7 +159,7 @@ class NodeConnection(threading.Thread):
                         # eot_pos = buffer.find(self.EOT_CHAR)
 
                         # TODO: 判断收到的data是什么类型的
-                        #if isinstance(self.miner, Miner):
+                        # if isinstance(self.miner, Miner):
 
                         # self.main_node.message_count_recv += 1
                         #
@@ -175,17 +175,51 @@ class NodeConnection(threading.Thread):
                             self.main_node.receive_blocks.append(data)
 
                             block = json.loads(data["new_block"])
-                            self.character.acceptBlock(block)
+
+                            # accept block
+                            ask_block_hash = self.character.acceptBlock(block)
+
+                            if ask_block_hash != None:
+                                self.main_node.send_to_node(self, {
+                                    "ask_block": ask_block_hash})
 
 
                         elif data not in self.main_node.receive_votes and 'vote' in data.keys():
                             self.main_node.message_count_recv += 1
                             self.main_node.receive_votes.append(data)
                             vote = json.loads(data["vote"])
-                            self.character.validator.acceptVote(vote)
 
-                        elif data not in self.main_node.receive_votes and data not in self.main_node.receive_blocks:
-                            print(data)
+                            # accept vote
+                            ask_block_hash = self.character.validator.acceptVote(vote)
+
+                            # if the vote epoch can be found in history vote, response with your history vote
+                            if vote["vote_information"]["target_epoch"] in self.character.validator.vote_history:
+                                self.main_node.send_to_node(self, {"vote": json.dumps(self.character.validator.vote_history[vote["vote_information"]["target_epoch"]])})
+
+                            # ask for block
+                            if ask_block_hash != None:
+                                self.main_node.send_to_node(self, {
+                                    "ask_block": ask_block_hash})
+
+                        elif 'ask_block' in data.keys():
+                            print("ask")
+                            block_hash = data["ask_block"]
+                            if block_hash in self.character.block_set:
+                                self.main_node.send_to_node(self, {"new_block": json.dumps(self.character.block_set[block_hash])})
+                        #
+                        # elif 'sync_request' in data.keys():
+                        #     print("sync")
+                        #     highest_justified_checkpoint = data["sync_request"]
+                        #     self.main_node.send_to_node(self, {"sync_response": json.dumps(self.character.block_set[block_hash])})
+
+
+                        # elif data not in self.main_node.receive_votes and 'give_block' in data.keys():
+                        #     print("receive_block")
+
+                        # elif data not in self.main_node.receive_votes and data not in self.main_node.receive_blocks:
+                        #     if "AAAA" not in self.miner.counter.penalty:
+                        #         self.miner.counter.penalty["AAAA"] = []
+                        #     self.miner.counter.penalty["AAAA"].append(data)
                         # elif data not in self.main_node.receive_sync and 'sync' in data.keys():
                         #     print("receive sync message")
                         #     self.main_node.receive_sync.append(data)
@@ -232,7 +266,9 @@ class NodeConnection(threading.Thread):
         return self.info[key]
 
     def __str__(self):
-        return 'NodeConnection: {}:{} <-> {}:{} ({})'.format(self.main_node.host, self.main_node.port, self.host, self.port, self.id)
+        return 'NodeConnection: {}:{} <-> {}:{} ({})'.format(self.main_node.host, self.main_node.port, self.host,
+                                                             self.port, self.id)
 
     def __repr__(self):
-        return '<NodeConnection: Node {}:{} <-> Connection {}:{}>'.format(self.main_node.host, self.main_node.port, self.host, self.port)
+        return '<NodeConnection: Node {}:{} <-> Connection {}:{}>'.format(self.main_node.host, self.main_node.port,
+                                                                          self.host, self.port)
