@@ -1,13 +1,11 @@
 # casper-blockchain
 # TODO List
-### First Delievery 
 * Validator
 * Counter
 * Dynasty
 * Rule
 * Checkpoint
-### Further Delievery   
-* SupermajorityLink (need confirm)
+* SupermajorityLink
 * Network
 * Time
 * Generator
