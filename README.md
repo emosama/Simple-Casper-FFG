@@ -1,12 +1,12 @@
-﻿**Casper in Blockchain** 
+﻿# Casper in Blockchain
 
-**Abstract** 
+## Abstract 
 
 We  want  to  introduce  consensus  algorithm  to  a  public  blockchain  application.  The tolerance  of  fail-stop  failures  and  byzantine  failures  and  the  scalability  of  nodes  in network  are  mainly  required.  In  this  report,  we  demonstrate  why  Casper  meet requirements more than other algorithm and the process of applying Casper into our application. 
 
 **Key words:** consensus algorithm, Casper, PoW, PoS, Raft, PBFT, blockchain 
 
-1. **Introduction** 
+## 1. Introduction 
 
 With the continuous development of technology, a new type of electronic cash system is proposed, which  realizes  direct  transactions  between  the  payer  and  the  receiver  through  peer-to-peer technology. This system eliminates third-party financial institutions in the middle of the transaction. The currency traded in this system is called Bitcoin and an emerging technical term arises from it which is the blockchain. Blockchain is used to implement the underlying technology of Bitcoin. A block is a storage unit to record information. The link between blocks is realized through a hash algorithm, and each block stores the hash value of previous block. With the increase of transaction information, new blocks are continuously generated and linked with previous blocks. Then a chain of blocks is formed that is blockchain(Nakamoto,2008). 
 
@@ -20,7 +20,7 @@ There are three types of blockchains which are public block chains, federated bl
 
 There are four major parts in our paper. Firstly, we will understand each consensus algorithm through reading the relevant paper. Then a detailed comparative analysis of each algorithm is conducted. Next, we will focus on the details of Casper algorithm, such as the implementation details  of  the  Casper  algorithm  and  a  demonstration  of  liveness  and  safety. And  a  detailed description based on the realization of Casper algorithm is made. Finally, we will summarize the paper and put forward a prospect for the future. 
 
-2. **Related Work** 
+## 2. Related Work 
 
 In this part, we will show the referenced literature and our overall research process. 
 
@@ -42,7 +42,7 @@ PoW to PoS. At the same time, the Casper algorithm was used to ensure the livene
 
 By studying the paper "Casper the Friendly Finality Gadget" published by Buterin & Griffith in 2017, it can be found that the Casper algorithm proposed in the paper combines PoS and Byzantine fault-tolerant algorithms, and it is a finality system that can overlay the PoW blockchain. The article mainly explains the characteristics of the Casper algorithm, such as accountability and dynamic validators(Buterin, & Griffith, 2017).  
 
-3. **Comparative analysis** 
+## 3. Comparative analysis 
 
 Our project is trying to construct a public blockchain, which means that everyone has read or write access on the blockchain. We compared several most common protocols that are used to achieve consensus in blockchain.  
 
@@ -60,15 +60,15 @@ And Ethereum is moving to PoS from PoW. Buterin et al (2020) stated that Ethereu
 
 Therefore, we decided to implement this relatively new algorithm — Casper to learn more about PoW mining process and the PoS validation mechanism. 
 
-4. **Casper Discussion and implementation** 
-4-1. **Overview and purpose of Casper** 
+## 4. Casper Discussion and implementation 
+### 4-1. Overview and purpose of Casper 
 
 Casper algorithm is a hybrid PoW/PoS algorithm, which is mainly used in Ethereum. In Casper, the PoW algorithm is used in the system to propose a block. However, due to the network delay and the existence of malicious nodes, there may be multiple child blocks for a parent block in the process of proposing a new block. Therefore, the PoS algorithm in Casper is used to maintain an additional layer of finality checkpoint tree from the blockchain, where the finality checkpoint in the tree is a linear unique structure.  
 
 Casper algorithm, like other consensus algorithms, aims to justify and finalize blocks so that all users maintain the same unique main chain. Here, especially for the finalized blocks, the transactions involved will not be reversed. 
 
-4-2. **Details of Casper algorithm** 
-4-2-1. **Block tree and Checkpoint tree** 
+### 4-2. Details of Casper algorithm 
+#### 4-2-1. Block tree and Checkpoint tree 
 
 In Casper, the proposal mechanism is similar to the PoW algorithm, and this mechanism will propose blocks and generate the underlying block tree. Meantime, Casper will propose and maintain an additional side tree, which is a checkpoint tree upon the existing block tree. The essence of the checkpoint here is still a block in the underlying block tree. As shown in Figure 1, the root in the block tree is called genesis block, and it is also used in the checkpoint tree to expand as root. For the checkpoint tree, the epoch is set to *k* which means that every block whose height *h* is a multiple of *k* will be proposed as a checkpoint. The hash of checkpoint is the original hash of related block and the height of checkpoint is set as *h/k*. As in Figure 1, the value of *k* is 3 and the red blocks are checkpoints. The formation and maintenance of the checkpoint tree mean that Casper not only maintains the block tree but also maintains a subtree of checkpoints. 
 
@@ -76,7 +76,7 @@ In Casper, the proposal mechanism is similar to the PoW algorithm, and this mech
 
 *Figure 1 - The checkpoint tree discovered from block tree* 
 
-4-2-2. **Validators and Votes** 
+#### 4-2-2. Validators and Votes 
 
 Any user can be a validator by depositing a minimal number of coins and acquire the right to vote. After finalizing a checkpoint, the validator can get a certain reward. Similarly, in the case of violating any rule, the validator will be punished as a malicious node and lose deposit. These mechanisms restrict the behavior of validators and increase the cost of malicious activities to ensure all validators more inclined to finalize checkpoints. Due to the existence of deposit, the security of PoS depends on the size of the deposit of each validator. Therefore, in this project, 2/3 of the total deposit will be used as the voting standard. 
 
@@ -96,7 +96,7 @@ It requires checkpoint *s* is the ancestor of checkpoint *t* in the checkpoint t
 
 - Justified checkpoint: The checkpoint *b* is justified if the *b* is genesis block or there is a supermajority link *a - > b* and checkpoint *a* is justified. For instance, In Figure 2, the root checkpoint is justified, and it has *root->a*, so checkpoint *a* is justified. And similarly, checkpoint *b* is justified. 
 - Finalized checkpoint: Checkpoint *a* is finalized, If the *a* is genesis block or if there is a supermajority link *a - > b*, checkpoint *a* is justified and has the direct Child *b*. Here checkpoint *b* is the direct child of *a*, which means *H (a) + 1 = H (b)*. For instance, In Figure 2 the root is finalized and the checkpoint *a* cannot be finalized because checkpoint *b* is not a direct child of *a*. 
-4-2-3. **Slashing condition** 
+#### 4-2-3. Slashing condition 
 
 To ensure the security of the validator voting, two rules are set here to ensure that any validator cannot violate. As a single validator, it cannot publish two distinct votes *(s1, t1, h(s1), h(t1))* and *(s2, t2, h(s2), h(t2))* make any of the following two rules exist: 
 
@@ -106,30 +106,30 @@ To ensure the security of the validator voting, two rules are set here to ensure
 
 In the network of the validator, any validator that violates any of the above rules will be detected by other validators, and the evidence of violation will be included in the blockchain as a transaction. At this time, the malicious validator will be penalized, and all of its deposits will be taken away, while the validator that detects the violation and submits evidence will get a certain amount of reward. This feature makes Casper avoid 51% attack in the PoW algorithm. 
 
-4-2-4. **Fork choice rule** 
+#### 4-2-4. Fork choice rule
 
 The fork choice rule specifies the default behavior of each validator, that is all validators will follow the fork with the greatest height justified checkpoint. The justified checkpoint will mark the main fork so that all validators will continue to propose new blocks at the main chain with the greatest height justified checkpoint instead of building on the longest chain. It can be avoided an additional penalty for the validator in the wrong chain fork. 
 
-4-2-5. **Dynamic Validators** 
+#### 4-2-5. Dynamic Validators
 
 In Casper, validators play an important role in deciding which checkpoint will be labelled as justified and finalized by voting. And the set of validators who can do vote for a checkpoint is defined as the dynasty of this checkpoint. Each dynasty is labelled with epoch, and the epoch of dynasty is defined as the number of finalized checkpoints before the related checkpoint. The dynasty is changing as the linear increasement of epoch. Validators can join or quit by changing the members of dynasty in later epoch. 
 
-4-3. **Liveness and Accountable safety** 
+### 4-3. Liveness and Accountable safety 
 
 **Liveness:**  Liveness for the Casper algorithm is to ensure that all the finalized chain has the child to extensions. This is because the fork choice rule guarantees that all validators will be extended on the main fork where the great height justified checkpoint is located, so that this fork has the last finalized checkpoint.** 
 
 **Accounting safety:**   Accounting safety enables Casper algorithm to detect no more than 1 / 3 malicious nodes. It is guaranteed by slashing condition, so If these malicious nodes violate rules, it will be detected and punished. 
 
-4-4. **Implementation** 
-4-4-1. **GitHub:** 
+### 4-4. Implementation 
+#### 4-4-1. GitHub
 
 The latest code and handbook can be accessed and viewed at below:  [https://github.com/EMOSAMA/casper-blockchain ](https://github.com/EMOSAMA/casper-blockchain)
 
-4-4-2. **Implementation Method** 
+#### 4-4-2. Implementation Method 
 
 The programming language which was used in this project is Python, the Flask development framework was used to build APIs. And a python script is used to generate HTML page which can collect data from APIs and do visualization.  
 
-4-4-3. **Development Model and Progress** 
+#### 4-4-3. Development Model and Progress 
 
 We adopt Agile development model into our project. We have divided our implementation process into four stages:  
 
@@ -146,13 +146,13 @@ Regard each stage mentioned above as a sprint, and each sprint last 5 days. The 
 
 *Figure 3 – Burndown Chart* 
 
-4-4-4. **Implementation Details** 
+#### 4-4-4. Implementation Details
 
 ![](img/Aspose.Words.47cf15a1-66a5-413b-91da-51b86eea47ed.008.jpeg)
 
 *Figure 4 – Class Diagram* All discussion below is based on the Class Diagram in Figure 4. 
 
-4-4-4-1. **Characters** 
+##### 4-4-4-1. Characters
 
 There are three main characters in our application, user, miner, and validator. Both miner and validator are the subclass of user. Both miner and validator contain a counter which can count the received vote and record vote history of each voter. But only validator in dynasty can do vote. 
 
@@ -174,15 +174,15 @@ There are three main characters in our application, user, miner, and validator. 
 
 *Figure 7 – Vote Supermajority Link Sequence Chart* 
 
-4-4-4-2. **Networks** 
+##### 4-4-4-2. Networks 
 
 The network in our application is a full connected network. Each User will hold a Node which contains  socket.  Each  Node  keeps  multiple  connection  channels,  each  connection  channel  is connected to another Node. If there are 5 Nodes, each Node will keep 4 connection channels. The connection channels are defined in file NodeConnection.py. 
 
-4-4-4-3. **Dynasty** 
+##### 4-4-4-3. Dynasty 
 
 The Dynasty defined the validator set which contain validators who can do vote. A list keeps here which contain all the dynasties. Each dynasty contains three sub list, the first list is the Newer list, the second list is the Member list, and the third list is the retired list. If a validator asks to join at dynasty N, it will be added to the Newer list of Dynasty N+2, and it will be moved to the Member list at Dynasty N+3. A validator asks to quit at Dynasty N, it will be moved to Retired list from Member list at dynasty N+2 and it will be removed from Retired list at dynasty N+3. The forward validator set is consisting of the Newer list and the Member list. The rear validator set is consisting of the Member list and the Retired list. A supermajority link can be evaluated only when both forward validator ser and rear validator set pass 2/3 votes.  
 
-4-4-4-4. **Web App** 
+##### 4-4-4-4. Web App
 
 The web application is a HTML page which generate by python script, it can interact with the provided APIs which defined in generator.py file. The representation of this web page is shown in Figure 8. Different color present different identity, for example, the orange block means finalized checkpoint. If you traverse the main chain from head to root, you will only find a unique path which pass all finalized checkpoint.  
 
@@ -190,13 +190,13 @@ The web application is a HTML page which generate by python script, it can inter
 
 *Figure 8 – Web page* 
 
-5. **Conclusion** 
+## 5. Conclusion 
 
 In this project, we have researched several consensus algorithms to analyze their feasibility of using in a public blockchain. And then we have detailed discussed the structure, principle, and rule of Casper. The liveness and safety are also analyzed and proved. Finally, the implementation methods, progresses  of  each  stage  and  application  details  of  the  Casper  blockchain  application  are demonstrated. From the processing of this project, we have deepened our knowledge of consensus algorithm and blockchain field. 
 
 **Further Implementation:**  The network in our application is a full connected network which is not feasible in practice. So, we can implement a P2P network which is usually used in practice in the future. Furthermore, we can apply some algorithms like UTXT on our application to construct wallet and support users manage their deposit. 
 
-**Reference** 
+## Reference
 
 Ahmad, A., Saad, M., Kim, J., Nyang, D., & Mohaisen, D. (2021, January). Performance evaluation of consensus protocols in blockchain-based audit systems. In *2021 International Conference on Information Networking (ICOIN)* (pp. 654-656). IEEE. 
 
